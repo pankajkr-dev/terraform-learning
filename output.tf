@@ -1,4 +1,7 @@
+# ==============================================================================
 # Phase 1: Networking Module Outputs
+# ==============================================================================
+
 output "vpc_id" {
   description = "The ID of the VPC"
   value       = module.networking.vpc_id
@@ -24,7 +27,10 @@ output "nat_gateway_ip" {
   value       = module.networking.nat_gateway_ip
 }
 
+# ==============================================================================
 # Phase 2: IAM Module Outputs
+# ==============================================================================
+
 output "ecs_task_execution_role_arn" {
   description = "ARN of the ECS Task Execution Role"
   value       = module.iam.ecs_task_execution_role_arn
@@ -33,4 +39,23 @@ output "ecs_task_execution_role_arn" {
 output "ecs_task_role_arn" {
   description = "ARN of the ECS Application Task Role"
   value       = module.iam.ecs_task_role_arn
+}
+
+# ==============================================================================
+# Phase 3: EC2 + ASG + ECR Module Outputs
+# ==============================================================================
+
+output "alb_dns_name" {
+  description = "The public DNS URL of the Application Load Balancer"
+  value       = module.compute_asg.alb_dns_name
+}
+
+output "ecr_repository_url" {
+  description = "The URL of the ECR Repository"
+  value       = module.compute_asg.ecr_repository_url
+}
+
+output "asg_name" {
+  description = "The name of the Auto Scaling Group"
+  value       = module.compute_asg.asg_name
 }

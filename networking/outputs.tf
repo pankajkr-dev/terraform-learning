@@ -37,3 +37,13 @@ output "rds_security_group_id" {
   description = "The ID of the RDS Security Group"
   value       = aws_security_group.rds.id
 }
+
+output "vpc_cidr" {
+  value       = aws_vpc.main.cidr_block
+  description = "CIDR block of the VPC"
+}
+
+output "rds_sg_id" {
+  value       = aws_security_group.rds.id
+  description = "ID of the RDS Security Group"
+}

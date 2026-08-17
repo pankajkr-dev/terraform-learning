@@ -8,6 +8,11 @@ variable "environment" {
   description = "Environment name (e.g. dev, prod)"
   type        = string
   default     = "dev"
+
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "The environment variable must be one of: dev, staging, prod."
+  }
 }
 
 variable "project_name" {
@@ -39,3 +44,5 @@ variable "availability_zones" {
   type        = list(string)
   default     = ["us-east-1a", "us-east-1b"]
 }
+
+
