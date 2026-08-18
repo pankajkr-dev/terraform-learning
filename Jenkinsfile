@@ -13,21 +13,21 @@ pipeline {
         }
         stage('Terraform Init') {
             steps {
-                withCredentials([[ $class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials-id' ]]) {
+                withCredentials([[ $class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds-for-terraform' ]]) {
                     sh 'terraform init'
                 }
             }
         }
         stage('Terraform Validate') {
             steps {
-                withCredentials([[ $class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials-id' ]]) {
+                withCredentials([[ $class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds-for-terraform' ]]) {
                     sh 'terraform validate'
                 }
             }
         }
         stage('Terraform Plan') {
             steps {
-                withCredentials([[ $class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials-id' ]]) {
+                withCredentials([[ $class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds-for-terraform' ]]) {
                     sh 'terraform plan -var-file="dev.tfvars" -out=tfplan'
                 }
             }
