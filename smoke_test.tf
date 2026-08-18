@@ -4,7 +4,7 @@ resource "null_resource" "alb_smoke_test" {
   }
 
   provisioner "local-exec" {
-    command     = "powershell -Command \"Invoke-WebRequest -Uri 'http://${module.compute_asg.alb_dns_name}' -UseBasicParsing -TimeoutSec 10\""
+    command     = "powershell -Command \"Start-Sleep -Seconds 30; Invoke-WebRequest -Uri 'http://${module.compute_asg.alb_dns_name}' -UseBasicParsing -TimeoutSec 15\""
     interpreter = ["PowerShell", "-Command"]
   }
 }
