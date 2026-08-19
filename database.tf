@@ -54,7 +54,7 @@ resource "aws_db_instance" "postgres" {
   allocated_storage      = 20
   max_allocated_storage  = 50
   engine                 = "postgres"
-  engine_version         = "16.3"
+  engine_version         = "18.3"
   instance_class         = "db.t3.micro"
   db_name                = "devdb"
   username               = "dbadmin"
