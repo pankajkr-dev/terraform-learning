@@ -1,17 +1,6 @@
 terraform {
   required_version = ">= 1.0.0"
 
-  # ==========================================
-  # REMOTE BACKEND CONFIGURATION
-  # ==========================================
-  backend "s3" {
-    bucket         = "dev-terraform-state-pankaj-2026-v2"
-    key            = "global/s3/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "dev-terraform-state-locks"
-    encrypt        = true
-  }
-
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -25,8 +14,8 @@ terraform {
 }
 
 provider "aws" {
-  region  = var.aws_region
-#  profile = "default"
+  region = var.aws_region
+# profile = "default"
 }
 
 # ==========================================
