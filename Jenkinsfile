@@ -23,7 +23,12 @@ pipeline {
             }
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds-for-terraform']]) {
-                    sh 'terraform init -input=false'
+                    sh '''
+                        mkdir -p /cache
+                        rm -rf .terraform
+                        terraform init -input=false
+                        chmod -R 777 /cache .terraform
+                    '''
                 }
             }
         }
@@ -37,7 +42,10 @@ pipeline {
             }
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds-for-terraform']]) {
-                    sh 'terraform validate'
+                    sh '''
+                        chmod -R +x /cache .terraform
+                        terraform validate
+                    '''
                 }
             }
         }
@@ -51,7 +59,10 @@ pipeline {
             }
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds-for-terraform']]) {
-                    sh 'terraform plan -var-file="dev.tfvars" -out=tfplan'
+                    sh '''
+                        chmod -R +x /cache .terraform
+                        terraform plan -var-file="dev.tfvars" -out=tfplan
+                    '''
                 }
             }
         }
@@ -72,7 +83,10 @@ pipeline {
             }
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds-for-terraform']]) {
-                    sh 'terraform apply -input=false tfplan'
+                    sh '''
+                        chmod -R +x /cache .terraform
+                        terraform apply -input=false tfplan
+                    '''
                 }
             }
         }
