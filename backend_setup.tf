@@ -2,7 +2,7 @@
 # S3 BUCKET FOR TERRAFORM REMOTE STATE
 # ==========================================
 resource "aws_s3_bucket" "terraform_state" {
-  bucket        = "dev-terraform-state-pankaj-2026"
+  bucket        = "dev-terraform-state-pankaj-2026-v2"
   force_destroy = true
 
   tags = {
