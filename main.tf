@@ -18,7 +18,6 @@ module "iam" {
   project_name = var.project_name
 }
 
-
 # Phase 3: EC2 + ASG + EBS + ECR Compute Module
 module "compute_asg" {
   source = "./compute_asg"

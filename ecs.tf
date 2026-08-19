@@ -26,11 +26,6 @@ resource "aws_ecs_cluster" "main" {
 # ==========================================
 # 3. IAM ROLES & POLICY ATTACHMENTS
 # ==========================================
-import {
-  to = aws_iam_role.ecs_task_role
-  id = "dev-ecs-task-role"
-}
-
 resource "aws_iam_role" "ecs_execution_role" {
   name = "dev-ecs-execution-role"
 
@@ -68,6 +63,11 @@ resource "aws_iam_role" "ecs_task_role" {
       }
     ]
   })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_secrets" {
+  role       = aws_iam_role.ecs_task_role.name
+  policy_arn = module.iam.app_secrets_policy_arn
 }
 
 # ==========================================
