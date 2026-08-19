@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'hashicorp/terraform:1.7.0'
-            // Mount the VM cache directory into /cache inside the container
+            // Mount host cache into container /cache
             args  '--entrypoint="" -u 0:0 --net=host -v /var/jenkins_home/.terraform.d/plugin-cache:/cache'
         }
     }
