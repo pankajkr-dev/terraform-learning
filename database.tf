@@ -4,7 +4,7 @@
 resource "random_password" "db_password" {
   length           = 16
   special          = true
-  override_special = "!#$%&*()-_=+[]{}<>:?"
+  override_special = "!#$%&*()-_=+"
 }
 
 # ==========================================
@@ -12,7 +12,7 @@ resource "random_password" "db_password" {
 # ==========================================
 resource "aws_secretsmanager_secret" "db_credentials" {
   name                    = "dev-db-credentials"
-  recovery_window_in_days = 0 # Allows immediate cleanup during terraform destroy
+  recovery_window_in_days = 0
 
   tags = {
     Environment = "dev"
@@ -54,7 +54,7 @@ resource "aws_db_instance" "postgres" {
   allocated_storage      = 20
   max_allocated_storage  = 50
   engine                 = "postgres"
-  engine_version         = "18.3"
+  engine_version         = "16.3"
   instance_class         = "db.t3.micro"
   db_name                = "devdb"
   username               = "dbadmin"
