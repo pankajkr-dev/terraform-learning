@@ -1,6 +1,9 @@
 # ==========================================
 # S3 BUCKET FOR TERRAFORM REMOTE STATE
 # ==========================================
+
+/*
+
 resource "aws_s3_bucket" "terraform_state" {
   bucket        = "dev-terraform-state-pankaj-2026-v2"
   force_destroy = true
@@ -52,5 +55,16 @@ resource "aws_dynamodb_table" "terraform_locks" {
   tags = {
     Environment = "dev"
     Project     = "ContainerizedWebPlatform"
+  }
+}
+
+*/
+
+terraform {
+  backend "s3" {
+    bucket         = "dev-terraform-state-pankaj-2026-v2"
+    key            = "dev/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "dev-terraform-state-locks"
   }
 }
