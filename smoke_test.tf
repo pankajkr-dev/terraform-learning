@@ -4,6 +4,6 @@ resource "null_resource" "alb_smoke_test" {
   }
 
   provisioner "local-exec" {
-    command = "sleep 30 && curl -sSf --max-time 15 http://${module.compute_asg.alb_dns_name}"
+    command = "sleep 30 && wget -q --spider --timeout=15 http://${module.compute_asg.alb_dns_name}"
   }
 }
