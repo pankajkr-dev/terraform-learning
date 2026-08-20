@@ -59,7 +59,7 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds-for-terraform']]) {
                     sh '''
                         chmod -R +x .terraform
-                        terraform plan -var-file="dev.tfvars" -out=tfplan
+                        terraform plan -input=false -var-file="dev.tfvars"
                     '''
                 }
             }
@@ -83,8 +83,7 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds-for-terraform']]) {
                     sh '''
                         chmod -R +x .terraform
-                        terraform plan -input=false -out=tfplan
-                        terraform apply -input=false tfplan
+                        terraform apply -input=false -var-file="dev.tfvars" -auto-approve
                     '''
                 }
             }
