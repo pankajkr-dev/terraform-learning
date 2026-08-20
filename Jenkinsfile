@@ -1,16 +1,9 @@
 pipeline {
     agent none
 
-    parameters {
-        choice(
-            name: 'ENVIRONMENT',
-            choices: ['dev', 'staging', 'prod'],
-            description: 'Select the target deployment environment'
-        )
-    }
-
     environment {
         CHECKPOINT_DISABLE = '1'
+        TARGET_ENV         = "${env.BRANCH_NAME}"
     }
 
     stages {
@@ -34,25 +27,8 @@ pipeline {
                         rm -rf .terraform
                         terraform init -input=false
                         chmod -R +x .terraform
-                        terraform workspace select -or-create ${params.ENVIRONMENT}
+                        terraform workspace select -or-create ${env.TARGET_ENV}
                     """
-                }
-            }
-        }
-
-        stage('Terraform Validate') {
-            agent {
-                docker {
-                    image 'hashicorp/terraform:1.7.0'
-                    args  '--entrypoint="" -u 0:0 --net=host'
-                }
-            }
-            steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds-for-terraform']]) {
-                    sh '''
-                        chmod -R +x .terraform
-                        terraform validate
-                    '''
                 }
             }
         }
@@ -68,8 +44,8 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds-for-terraform']]) {
                     sh """
                         chmod -R +x .terraform
-                        terraform workspace select ${params.ENVIRONMENT}
-                        terraform plan -input=false -var-file="${params.ENVIRONMENT}.tfvars"
+                        terraform workspace select ${env.TARGET_ENV}
+                        terraform plan -input=false -var-file="${env.TARGET_ENV}.tfvars"
                     """
                 }
             }
@@ -78,7 +54,7 @@ pipeline {
         stage('Approval') {
             agent none
             steps {
-                input message: "Approve deployment to ${params.ENVIRONMENT} environment?", ok: 'Apply Changes'
+                input message: "Approve deployment to ${env.TARGET_ENV} environment?", ok: 'Apply Changes'
             }
         }
 
@@ -93,8 +69,8 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds-for-terraform']]) {
                     sh """
                         chmod -R +x .terraform
-                        terraform workspace select ${params.ENVIRONMENT}
-                        terraform apply -input=false -var-file="${params.ENVIRONMENT}.tfvars" -auto-approve
+                        terraform workspace select ${env.TARGET_ENV}
+                        terraform apply -input=false -var-file="${env.TARGET_ENV}.tfvars" -auto-approve
                     """
                 }
             }
