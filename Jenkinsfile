@@ -1,9 +1,13 @@
 pipeline {
     agent none
 
+    parameters {
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'staging', 'prod'], description: 'Select deployment environment')
+    }
+
     environment {
         CHECKPOINT_DISABLE = '1'
-        TARGET_ENV         = "${env.BRANCH_NAME}"
+        TARGET_ENV         = "${params.ENVIRONMENT ?: env.BRANCH_NAME ?: 'dev'}"
     }
 
     stages {
