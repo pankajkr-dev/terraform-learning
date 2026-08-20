@@ -2,12 +2,12 @@
 # 1. CLOUDWATCH LOG GROUP
 # ==========================================
 resource "aws_cloudwatch_log_group" "ecs_logs" {
-  name              = "/ecs/dev-app"
+  name              = "/ecs/${var.environment}-app"
   retention_in_days = 7
 
   tags = {
-    Environment = "dev"
-    Project     = "ContainerizedWebPlatform"
+    Environment = var.environment
+    Project     = var.project_name
   }
 }
 
@@ -15,7 +15,7 @@ resource "aws_cloudwatch_log_group" "ecs_logs" {
 # 2. ECS CLUSTER
 # ==========================================
 resource "aws_ecs_cluster" "main" {
-  name = "dev-ecs-cluster"
+  name = "${var.environment}-ecs-cluster"
 
   setting {
     name  = "containerInsights"
@@ -27,7 +27,7 @@ resource "aws_ecs_cluster" "main" {
 # 3. IAM ROLES & POLICY ATTACHMENTS
 # ==========================================
 resource "aws_iam_role" "ecs_execution_role" {
-  name = "dev-ecs-execution-role"
+  name = "${var.environment}-ecs-execution-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -58,7 +58,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_secrets" {
 # 4. SECURITY GROUP FOR FARGATE TASKS
 # ==========================================
 resource "aws_security_group" "ecs_tasks_sg" {
-  name        = "dev-ecs-tasks-sg"
+  name        = "${var.environment}-ecs-tasks-sg"
   description = "Allow HTTP traffic to ECS tasks"
   vpc_id      = module.networking.vpc_id
 
@@ -78,7 +78,7 @@ resource "aws_security_group" "ecs_tasks_sg" {
   }
 
   tags = {
-    Name = "dev-ecs-tasks-sg"
+    Name = "${var.environment}-ecs-tasks-sg"
   }
 }
 
@@ -86,7 +86,7 @@ resource "aws_security_group" "ecs_tasks_sg" {
 # 5. TASK DEFINITION
 # ==========================================
 resource "aws_ecs_task_definition" "app" {
-  family                   = "dev-app-task"
+  family                   = "${var.environment}-app-task"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
@@ -110,7 +110,7 @@ resource "aws_ecs_task_definition" "app" {
         logDriver = "awslogs"
         options = {
           "awslogs-group"         = aws_cloudwatch_log_group.ecs_logs.name
-          "awslogs-region"        = "us-east-1"
+          "awslogs-region"        = var.aws_region
           "awslogs-stream-prefix" = "ecs"
         }
       }
@@ -122,7 +122,7 @@ resource "aws_ecs_task_definition" "app" {
 # 6. ECS SERVICE (STANDALONE FARGATE)
 # ==========================================
 resource "aws_ecs_service" "main" {
-  name            = "dev-ecs-service"
+  name            = "${var.environment}-ecs-service"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.app.arn
   desired_count   = 2

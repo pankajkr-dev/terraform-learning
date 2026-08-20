@@ -11,12 +11,12 @@ resource "random_password" "db_password" {
 # 2. AWS SECRETS MANAGER FOR DB CREDENTIALS
 # ==========================================
 resource "aws_secretsmanager_secret" "db_credentials" {
-  name                    = "dev-db-credentials"
+  name                    = "${var.environment}-db-credentials"
   recovery_window_in_days = 0
 
   tags = {
-    Environment = "dev"
-    Project     = "ContainerizedWebPlatform"
+    Environment = var.environment
+    Project     = var.project_name
   }
 }
 
@@ -28,7 +28,7 @@ resource "aws_secretsmanager_secret_version" "db_credentials_version" {
     port     = aws_db_instance.postgres.port
     username = "dbadmin"
     password = random_password.db_password.result
-    database = "devdb"
+    database = "${var.environment}db"
   })
 }
 
@@ -36,13 +36,13 @@ resource "aws_secretsmanager_secret_version" "db_credentials_version" {
 # 3. DB SUBNET GROUP (PRIVATE SUBNETS)
 # ==========================================
 resource "aws_db_subnet_group" "main" {
-  name       = "dev-db-subnet-group"
+  name       = "${var.environment}-db-subnet-group"
   subnet_ids = module.networking.private_subnet_ids
 
   tags = {
-    Name        = "dev-db-subnet-group"
-    Environment = "dev"
-    Project     = "ContainerizedWebPlatform"
+    Name        = "${var.environment}-db-subnet-group"
+    Environment = var.environment
+    Project     = var.project_name
   }
 }
 
@@ -50,13 +50,13 @@ resource "aws_db_subnet_group" "main" {
 # 4. RDS POSTGRESQL INSTANCE
 # ==========================================
 resource "aws_db_instance" "postgres" {
-  identifier             = "dev-postgres-db"
+  identifier             = "${var.environment}-postgres-db"
   allocated_storage      = 20
   max_allocated_storage  = 50
   engine                 = "postgres"
   engine_version         = "18.3"
   instance_class         = "db.t3.micro"
-  db_name                = "devdb"
+  db_name                = "${var.environment}db"
   username               = "dbadmin"
   password               = random_password.db_password.result
   db_subnet_group_name   = aws_db_subnet_group.main.name
@@ -67,7 +67,7 @@ resource "aws_db_instance" "postgres" {
   multi_az            = false
 
   tags = {
-    Environment = "dev"
-    Project     = "ContainerizedWebPlatform"
+    Environment = var.environment
+    Project     = var.project_name
   }
 }

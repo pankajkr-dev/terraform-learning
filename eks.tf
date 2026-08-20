@@ -2,7 +2,7 @@
 # 1. IAM ROLE FOR EKS CLUSTER CONTROL PLANE
 # ==========================================
 resource "aws_iam_role" "eks_cluster_role" {
-  name = "dev-eks-cluster-role"
+  name = "${var.environment}-eks-cluster-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -18,8 +18,8 @@ resource "aws_iam_role" "eks_cluster_role" {
   })
 
   tags = {
-    Environment = "dev"
-    Project     = "ContainerizedWebPlatform"
+    Environment = var.environment
+    Project     = var.project_name
   }
 }
 
@@ -32,7 +32,7 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
 # 2. EKS CONTROL PLANE CLUSTER
 # ==========================================
 resource "aws_eks_cluster" "main" {
-  name     = "dev-eks-cluster"
+  name     = "${var.environment}-eks-cluster"
   role_arn = aws_iam_role.eks_cluster_role.arn
   version  = "1.31"
 
@@ -47,8 +47,8 @@ resource "aws_eks_cluster" "main" {
   ]
 
   tags = {
-    Environment = "dev"
-    Project     = "ContainerizedWebPlatform"
+    Environment = var.environment
+    Project     = var.project_name
   }
 }
 
@@ -56,7 +56,7 @@ resource "aws_eks_cluster" "main" {
 # 3. IAM ROLE FOR EKS WORKER NODE GROUP
 # ==========================================
 resource "aws_iam_role" "eks_node_group_role" {
-  name = "dev-eks-node-group-role"
+  name = "${var.environment}-eks-node-group-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -72,8 +72,8 @@ resource "aws_iam_role" "eks_node_group_role" {
   })
 
   tags = {
-    Environment = "dev"
-    Project     = "ContainerizedWebPlatform"
+    Environment = var.environment
+    Project     = var.project_name
   }
 }
 
@@ -97,7 +97,7 @@ resource "aws_iam_role_policy_attachment" "eks_container_registry" {
 # ==========================================
 resource "aws_eks_node_group" "main" {
   cluster_name    = aws_eks_cluster.main.name
-  node_group_name = "dev-eks-worker-nodes"
+  node_group_name = "${var.environment}-eks-worker-nodes"
   node_role_arn   = aws_iam_role.eks_node_group_role.arn
   subnet_ids      = module.networking.private_subnet_ids
 
@@ -121,7 +121,7 @@ resource "aws_eks_node_group" "main" {
   ]
 
   tags = {
-    Environment = "dev"
-    Project     = "ContainerizedWebPlatform"
+    Environment = var.environment
+    Project     = var.project_name
   }
 }
