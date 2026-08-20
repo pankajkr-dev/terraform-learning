@@ -1,6 +1,14 @@
 pipeline {
     agent none
 
+    parameters {
+        choice(
+            name: 'ENVIRONMENT',
+            choices: ['dev', 'staging', 'prod'],
+            description: 'Select the target deployment environment'
+        )
+    }
+
     environment {
         CHECKPOINT_DISABLE = '1'
     }
@@ -22,11 +30,12 @@ pipeline {
             }
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds-for-terraform']]) {
-                    sh '''
+                    sh """
                         rm -rf .terraform
                         terraform init -input=false
                         chmod -R +x .terraform
-                    '''
+                        terraform workspace select -or-create ${params.ENVIRONMENT}
+                    """
                 }
             }
         }
@@ -57,10 +66,11 @@ pipeline {
             }
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds-for-terraform']]) {
-                    sh '''
+                    sh """
                         chmod -R +x .terraform
-                        terraform plan -input=false -var-file="dev.tfvars"
-                    '''
+                        terraform workspace select ${params.ENVIRONMENT}
+                        terraform plan -input=false -var-file="${params.ENVIRONMENT}.tfvars"
+                    """
                 }
             }
         }
@@ -68,7 +78,7 @@ pipeline {
         stage('Approval') {
             agent none
             steps {
-                input message: 'Approve infrastructure deployment to AWS?', ok: 'Apply Changes'
+                input message: "Approve deployment to ${params.ENVIRONMENT} environment?", ok: 'Apply Changes'
             }
         }
 
@@ -81,10 +91,11 @@ pipeline {
             }
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds-for-terraform']]) {
-                    sh '''
+                    sh """
                         chmod -R +x .terraform
-                        terraform apply -input=false -var-file="dev.tfvars" -auto-approve
-                    '''
+                        terraform workspace select ${params.ENVIRONMENT}
+                        terraform apply -input=false -var-file="${params.ENVIRONMENT}.tfvars" -auto-approve
+                    """
                 }
             }
         }
