@@ -62,14 +62,6 @@ resource "aws_security_group" "rds" {
   description = "Allows database connections strictly from the Compute SG"
   vpc_id      = aws_vpc.main.id
 
-  ingress {
-    description     = "Allow PostgreSQL from Compute SG only"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.compute.id]
-  }
-
   egress {
     from_port   = 0
     to_port     = 0

@@ -46,6 +46,16 @@ resource "aws_db_subnet_group" "main" {
   }
 }
 
+resource "aws_security_group_rule" "rds_from_compute" {
+  type                     = "ingress"
+  security_group_id        = module.networking.rds_security_group_id
+  source_security_group_id = module.networking.compute_security_group_id
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  description              = "Allow PostgreSQL from EC2 compute instances"
+}
+
 # ==========================================
 # 4. RDS POSTGRESQL INSTANCE
 # ==========================================
