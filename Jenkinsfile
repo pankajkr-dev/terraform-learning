@@ -219,9 +219,9 @@ pipeline {
                         apk add --no-cache aws-cli curl
                         terraform workspace select ${env.TARGET_ENV}
                         terraform apply -input=false tfplan.binary
+                        terraform output -raw alb_dns_name > alb_dns_name.txt
                     """
                 }
-                sh 'terraform output -raw alb_dns_name > alb_dns_name.txt'
                 archiveArtifacts artifacts: 'alb_dns_name.txt', fingerprint: true
                 sh 'curl --fail --retry 10 --retry-delay 15 "http://$(cat alb_dns_name.txt)"'
             }

@@ -48,7 +48,7 @@ variable "availability_zones" {
 variable "alert_email" {
   description = "Optional email address for SNS alert subscriptions"
   type        = string
-  default     = ""
+  default     = "pankajkr.vitj@gmail.com"
 }
 
 variable "container_image" {
