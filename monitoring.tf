@@ -95,6 +95,25 @@ resource "aws_cloudwatch_metric_alarm" "rds_low_storage" {
   }
 }
 
+resource "aws_cloudwatch_metric_alarm" "rds_connections_high" {
+  alarm_name          = "${var.environment}-rds-connections-high-alarm"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 2
+  metric_name         = "DatabaseConnections"
+  namespace           = "AWS/RDS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 80
+  alarm_description   = "Triggers when PostgreSQL database connections reach 80 or more"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    DBInstanceIdentifier = aws_db_instance.postgres.identifier
+  }
+
+  tags = local.common_tags
+}
+
 # ==========================================
 # 6. ALB HTTP 5XX ERROR RATE ALARM
 # ==========================================

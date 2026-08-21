@@ -63,8 +63,13 @@ resource "aws_db_instance" "postgres" {
   vpc_security_group_ids = [module.networking.rds_sg_id]
 
   publicly_accessible = false
+  storage_encrypted   = true
   skip_final_snapshot = true
   multi_az            = false
+
+  lifecycle {
+    prevent_destroy = true
+  }
 
   tags = {
     Environment = var.environment
