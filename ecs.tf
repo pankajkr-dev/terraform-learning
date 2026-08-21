@@ -63,11 +63,11 @@ resource "aws_security_group" "ecs_tasks_sg" {
   vpc_id      = module.networking.vpc_id
 
   ingress {
-    description = "HTTP Inbound"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "HTTP Inbound"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [module.networking.alb_security_group_id]
   }
 
   egress {
@@ -78,8 +78,20 @@ resource "aws_security_group" "ecs_tasks_sg" {
   }
 
   tags = {
-    Name = "${var.environment}-ecs-tasks-sg"
+    Name        = "${var.environment}-ecs-tasks-sg"
+    Environment = var.environment
+    Project     = var.project_name
   }
+}
+
+resource "aws_security_group_rule" "rds_from_ecs" {
+  type                     = "ingress"
+  security_group_id        = module.networking.rds_security_group_id
+  source_security_group_id = aws_security_group.ecs_tasks_sg.id
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  description              = "Allow PostgreSQL from ECS tasks"
 }
 
 # ==========================================
@@ -97,7 +109,7 @@ resource "aws_ecs_task_definition" "app" {
   container_definitions = jsonencode([
     {
       name      = "web-app"
-      image     = "nginx:latest"
+      image     = var.container_image
       essential = true
       portMappings = [
         {
@@ -128,6 +140,12 @@ resource "aws_ecs_service" "main" {
   desired_count   = 2
   launch_type     = "FARGATE"
 
+  load_balancer {
+    target_group_arn = aws_lb_target_group.ecs.arn
+    container_name   = "web-app"
+    container_port   = 80
+  }
+
   network_configuration {
     subnets          = module.networking.private_subnet_ids
     security_groups  = [aws_security_group.ecs_tasks_sg.id]
@@ -135,6 +153,7 @@ resource "aws_ecs_service" "main" {
   }
 
   depends_on = [
-    aws_iam_role_policy_attachment.ecs_execution_policy
+    aws_iam_role_policy_attachment.ecs_execution_policy,
+    aws_lb_listener_rule.ecs
   ]
 }

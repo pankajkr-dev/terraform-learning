@@ -59,3 +59,14 @@ output "asg_name" {
   description = "The name of the Auto Scaling Group"
   value       = module.compute_asg.asg_name
 }
+
+output "rds_endpoint" {
+  description = "The private endpoint of the PostgreSQL database"
+  value       = aws_db_instance.postgres.endpoint
+  sensitive   = true
+}
+
+output "eks_cluster_name" {
+  description = "The EKS cluster name"
+  value       = aws_eks_cluster.main.name
+}
