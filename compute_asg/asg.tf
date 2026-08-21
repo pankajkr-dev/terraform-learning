@@ -13,8 +13,7 @@ resource "aws_autoscaling_group" "app" {
     version = "$Latest"
   }
 
-  # Changed from ELB to EC2 to avoid ASG instance termination timeouts during initialization
-  health_check_type         = "EC2"
+  health_check_type         = "ELB"
   health_check_grace_period = 300
 
   instance_refresh {
