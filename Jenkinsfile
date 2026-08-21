@@ -12,7 +12,7 @@ pipeline {
         choice(
             name: 'ENVIRONMENT',
             choices: ['dev', 'staging', 'prod'],
-            description: 'Select the target deployment environment'
+            description: 'Target environment; multibranch jobs must match their branch'
         )
     }
 
@@ -26,6 +26,18 @@ pipeline {
             agent any
             steps {
                 checkout scm
+                script {
+                    def branchEnvironment = ['dev', 'staging', 'prod'].contains(env.BRANCH_NAME) ? env.BRANCH_NAME : null
+                    def requestedEnvironment = branchEnvironment ?: (params.ENVIRONMENT ?: 'dev')
+
+                    if (branchEnvironment && params.ENVIRONMENT && params.ENVIRONMENT != branchEnvironment) {
+                        echo "Ignoring ENVIRONMENT=${params.ENVIRONMENT}; multibranch branch '${env.BRANCH_NAME}' is authoritative."
+                    }
+
+                    env.TARGET_ENV = requestedEnvironment
+                    env.TF_STATE_KEY = "${requestedEnvironment}/terraform.tfstate"
+                    echo "Target environment: ${env.TARGET_ENV}"
+                }
             }
         }
 
@@ -41,8 +53,8 @@ pipeline {
                     sh """
                         apk add --no-cache aws-cli curl
                         rm -rf .terraform
-                        terraform init -input=false
-                        terraform workspace select -or-create ${params.ENVIRONMENT}
+                        terraform init -reconfigure -input=false -backend-config="key=${env.TF_STATE_KEY}"
+                        terraform workspace select -or-create ${env.TARGET_ENV}
                         terraform validate
                     """
                 }
@@ -66,8 +78,8 @@ pipeline {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-jenkins-deployer'], string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
                         sh """
                             apk add --no-cache aws-cli curl
-                            terraform workspace select ${params.ENVIRONMENT}
-                            terraform plan -input=false -var-file="${params.ENVIRONMENT}.tfvars" -no-color -out=tfplan.binary > plan_output.txt
+                            terraform workspace select ${env.TARGET_ENV}
+                            terraform plan -input=false -var-file="${env.TARGET_ENV}.tfvars" -no-color -out=tfplan.binary > plan_output.txt
                             terraform show -no-color tfplan.binary > plan_readable.txt
                         """
                     }
@@ -77,7 +89,7 @@ pipeline {
                     // Step 2: Format payload natively in Groovy to avoid sed/jq/gh CLI failures
                     def rawPlan = readFile('plan_readable.txt')
                     def truncatedPlan = rawPlan.length() > 3000 ? rawPlan.substring(0, 3000) + "\n... [Output Truncated]" : rawPlan
-                    def commentBody = "### 🚀 Terraform Plan Output (`${params.ENVIRONMENT}`)\n```hcl\n${truncatedPlan}\n```"
+                    def commentBody = "### Terraform Plan Output (`${env.TARGET_ENV}`)\n```hcl\n${truncatedPlan}\n```"
                     def jsonPayload = groovy.json.JsonOutput.toJson([body: commentBody])
                     writeFile file: 'github_payload.json', text: jsonPayload
 
@@ -114,16 +126,16 @@ pipeline {
                     // Step 1: Execute detailed-exitcode plan in Terraform container
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-jenkins-deployer']]) {
                         sh 'apk add --no-cache aws-cli curl'
-                        sh 'terraform workspace select ' + params.ENVIRONMENT
+                        sh 'terraform workspace select ' + env.TARGET_ENV
                         exitCode = sh(
-                            script: "terraform plan -detailed-exitcode -input=false -var-file=\"${params.ENVIRONMENT}.tfvars\" -no-color",
+                            script: "terraform plan -detailed-exitcode -input=false -var-file=\"${env.TARGET_ENV}.tfvars\" -no-color",
                             returnStatus: true
                         )
                     }
 
                     // Step 2: Evaluate exit code (0 = match, 2 = drift, 1 = execution error)
                     if (exitCode == 2) {
-                        echo "DRIFT DETECTED: Manual infrastructure changes found in ${params.ENVIRONMENT}!"
+                        echo "DRIFT DETECTED: Manual infrastructure changes found in ${env.TARGET_ENV}!"
                         currentBuild.result = 'UNSTABLE'
 
                         // Step 3: Publish SNS alert using AWS CLI container via Instance Profile
@@ -131,8 +143,8 @@ pipeline {
                             sh """
                                 aws sns publish \
                                     --topic-arn "${SNS_TOPIC_ARN}" \
-                                    --subject "ALERT: Infrastructure Drift Detected [${params.ENVIRONMENT}]" \
-                                    --message "Terraform detected unmanaged console changes in environment '${params.ENVIRONMENT}' during the nightly drift check."
+                                    --subject "ALERT: Infrastructure Drift Detected [${env.TARGET_ENV}]" \
+                                    --message "Terraform detected unmanaged console changes in environment '${env.TARGET_ENV}' during the nightly drift check."
                             """
                         }
                     } else if (exitCode == 1) {
@@ -161,8 +173,8 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-jenkins-deployer']]) {
                     sh """
                         apk add --no-cache aws-cli curl
-                        terraform workspace select ${params.ENVIRONMENT}
-                        terraform plan -input=false -var-file="${params.ENVIRONMENT}.tfvars" -out=tfplan.binary
+                        terraform workspace select ${env.TARGET_ENV}
+                        terraform plan -input=false -var-file="${env.TARGET_ENV}.tfvars" -out=tfplan.binary
                     """
                 }
                 archiveArtifacts artifacts: 'tfplan.binary', fingerprint: true
@@ -180,7 +192,7 @@ pipeline {
             agent none
             steps {
                 timeout(time: 30, unit: 'MINUTES') {
-                    input message: "Approve deployment to ${params.ENVIRONMENT} environment?", ok: 'Apply Changes'
+                    input message: "Approve deployment to ${env.TARGET_ENV} environment?", ok: 'Apply Changes'
                 }
             }
         }
@@ -203,7 +215,7 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-jenkins-deployer']]) {
                     sh """
                         apk add --no-cache aws-cli curl
-                        terraform workspace select ${params.ENVIRONMENT}
+                        terraform workspace select ${env.TARGET_ENV}
                         terraform apply -input=false tfplan.binary
                     """
                 }
