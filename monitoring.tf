@@ -14,9 +14,10 @@ resource "aws_sns_topic" "alerts" {
 # 2. SNS EMAIL SUBSCRIPTION
 # ==========================================
 resource "aws_sns_topic_subscription" "email_alert" {
+  count     = var.alert_email == "" ? 0 : 1
   topic_arn = aws_sns_topic.alerts.arn
   protocol  = "email"
-  endpoint  = "pankajkr.vitj@gmail.com" # Replace with your actual email address
+  endpoint  = var.alert_email
 }
 
 # ==========================================

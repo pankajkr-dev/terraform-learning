@@ -1,4 +1,6 @@
 resource "null_resource" "alb_smoke_test" {
+  count = var.smoke_test_enabled ? 1 : 0
+
   triggers = {
     alb_dns = module.compute_asg.alb_dns_name
   }
