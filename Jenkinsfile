@@ -110,8 +110,9 @@ pipeline {
         // WORKFLOW 2: Nightly Drift Detection & SNS Alert
         stage('Nightly Drift Detection') {
             when {
-                buildingTag() == false
-                expression { return currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0 }
+                expression {
+                    return !buildingTag() && currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').size() > 0
+                }
             }
             agent {
                 docker {
@@ -178,7 +179,7 @@ pipeline {
                     """
                 }
                 archiveArtifacts artifacts: 'tfplan.binary', fingerprint: true
-                stash name: 'terraform-plan', includes: 'tfplan.binary', overwrite: true
+                stash name: 'terraform-plan', includes: 'tfplan.binary'
             }
         }
 
