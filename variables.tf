@@ -51,6 +51,12 @@ variable "alert_email" {
   default     = "pankajkr.vitj@gmail.com"
 }
 
+variable "rds_storage_encrypted" {
+  description = "Whether the RDS storage is encrypted at rest"
+  type        = bool
+  default     = true
+}
+
 variable "container_image" {
   description = "Container image used by ECS"
   type        = string
