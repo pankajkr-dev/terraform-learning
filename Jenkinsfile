@@ -212,6 +212,7 @@ pipeline {
                 }
             }
             steps {
+                sh 'rm -f tfplan.binary'
                 unstash 'terraform-plan'
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-jenkins-deployer']]) {
                     sh """
@@ -233,9 +234,6 @@ pipeline {
         }
         failure {
             echo 'Terraform pipeline failed.'
-        }
-        always {
-            cleanWs()
         }
     }
 }
