@@ -61,6 +61,24 @@ pipeline {
             }
         }
 
+        stage('Terraform Quality Gates') {
+            agent {
+                docker {
+                    image 'hashicorp/terraform:1.7.0'
+                    args  '--entrypoint="" -u 0:0 --net=host'
+                }
+            }
+            steps {
+                sh '''
+                    apk add --no-cache python3 py3-pip
+                    terraform fmt -check -recursive
+                    pip3 install --break-system-packages --no-cache-dir checkov
+                    checkov --directory . --framework terraform --compact --soft-fail | tee checkov-report.txt
+                '''
+                archiveArtifacts artifacts: 'checkov-report.txt', allowEmptyArchive: false
+            }
+        }
+
         // WORKFLOW 1: Pull Request Plan & Native GitHub Comment
         stage('PR Automation - Terraform Plan') {
             when {
@@ -224,6 +242,32 @@ pipeline {
                 }
                 archiveArtifacts artifacts: 'alb_dns_name.txt', fingerprint: true
                 sh 'curl --fail --retry 10 --retry-delay 15 "http://$(cat alb_dns_name.txt)"'
+            }
+        }
+
+        stage('Build and Push Application Image') {
+            when {
+                expression {
+                    return !env.CHANGE_ID && currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').isEmpty()
+                }
+            }
+            agent {
+                docker {
+                    image 'hashicorp/terraform:1.7.0'
+                    args  '--entrypoint="" -u 0:0 --net=host -v /var/run/docker.sock:/var/run/docker.sock'
+                }
+            }
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-jenkins-deployer']]) {
+                    sh """
+                        apk add --no-cache aws-cli docker-cli
+                        repository_url=\$(terraform output -raw ecr_repository_url)
+                        chmod +x scripts/build-push.sh
+                        scripts/build-push.sh \"\$repository_url\" \"\${BUILD_NUMBER}\"
+                        echo \"\$repository_url:\${BUILD_NUMBER}\" > image_uri.txt
+                    """
+                }
+                archiveArtifacts artifacts: 'image_uri.txt', fingerprint: true
             }
         }
     }

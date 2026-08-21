@@ -31,10 +31,28 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
 # ==========================================
 # 2. EKS CONTROL PLANE CLUSTER
 # ==========================================
+resource "aws_cloudwatch_log_group" "eks_logs" {
+  name              = "/aws/eks/${var.environment}/cluster"
+  retention_in_days = 30
+
+  tags = {
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
 resource "aws_eks_cluster" "main" {
   name     = "${var.environment}-eks-cluster"
   role_arn = aws_iam_role.eks_cluster_role.arn
   version  = "1.31"
+
+  enabled_cluster_log_types = [
+    "api",
+    "audit",
+    "authenticator",
+    "controllerManager",
+    "scheduler"
+  ]
 
   vpc_config {
     subnet_ids              = module.networking.private_subnet_ids
@@ -43,7 +61,8 @@ resource "aws_eks_cluster" "main" {
   }
 
   depends_on = [
-    aws_iam_role_policy_attachment.eks_cluster_policy
+    aws_iam_role_policy_attachment.eks_cluster_policy,
+    aws_cloudwatch_log_group.eks_logs
   ]
 
   tags = {
