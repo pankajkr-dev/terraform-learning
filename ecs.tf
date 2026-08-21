@@ -6,8 +6,8 @@ resource "aws_cloudwatch_log_group" "ecs_logs" {
   retention_in_days = 7
 
   tags = {
-    Environment = "dev"
-    Project     = "ContainerizedWebPlatform"
+    Environment = var.environment
+    Project     = var.project_name
   }
 }
 
@@ -82,6 +82,16 @@ resource "aws_security_group" "ecs_tasks_sg" {
     Environment = var.environment
     Project     = var.project_name
   }
+}
+
+resource "aws_security_group_rule" "rds_from_ecs" {
+  type                     = "ingress"
+  security_group_id        = module.networking.rds_security_group_id
+  source_security_group_id = aws_security_group.ecs_tasks_sg.id
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  description              = "Allow PostgreSQL from ECS tasks"
 }
 
 # ==========================================

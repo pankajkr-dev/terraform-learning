@@ -2,11 +2,11 @@
 # 1. SNS TOPIC FOR ALERTS
 # ==========================================
 resource "aws_sns_topic" "alerts" {
-  name = "dev-infrastructure-alerts"
+  name = "${var.environment}-infrastructure-alerts"
 
   tags = {
-    Environment = "dev"
-    Project     = "ContainerizedWebPlatform"
+    Environment = var.environment
+    Project     = var.project_name
   }
 }
 
@@ -24,7 +24,7 @@ resource "aws_sns_topic_subscription" "email_alert" {
 # 3. HIGH CPU ALARM FOR AUTOSCALING GROUP
 # ==========================================
 resource "aws_cloudwatch_metric_alarm" "asg_high_cpu" {
-  alarm_name          = "dev-asg-high-cpu-alarm"
+  alarm_name          = "${var.environment}-asg-high-cpu-alarm"
   comparison_operator = "GreaterThanOrEqualToThreshold"
   evaluation_periods  = 2
   metric_name         = "CPUUtilization"
@@ -40,8 +40,8 @@ resource "aws_cloudwatch_metric_alarm" "asg_high_cpu" {
   }
 
   tags = {
-    Environment = "dev"
-    Project     = "ContainerizedWebPlatform"
+    Environment = var.environment
+    Project     = var.project_name
   }
 }
 
@@ -49,7 +49,7 @@ resource "aws_cloudwatch_metric_alarm" "asg_high_cpu" {
 # 4. RDS DATABASE HIGH CPU ALARM
 # ==========================================
 resource "aws_cloudwatch_metric_alarm" "rds_high_cpu" {
-  alarm_name          = "dev-rds-high-cpu-alarm"
+  alarm_name          = "${var.environment}-rds-high-cpu-alarm"
   comparison_operator = "GreaterThanOrEqualToThreshold"
   evaluation_periods  = 2
   metric_name         = "CPUUtilization"
@@ -65,8 +65,8 @@ resource "aws_cloudwatch_metric_alarm" "rds_high_cpu" {
   }
 
   tags = {
-    Environment = "dev"
-    Project     = "ContainerizedWebPlatform"
+    Environment = var.environment
+    Project     = var.project_name
   }
 }
 
@@ -74,7 +74,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_high_cpu" {
 # 5. RDS DATABASE LOW STORAGE ALARM
 # ==========================================
 resource "aws_cloudwatch_metric_alarm" "rds_low_storage" {
-  alarm_name          = "dev-rds-low-storage-alarm"
+  alarm_name          = "${var.environment}-rds-low-storage-alarm"
   comparison_operator = "LessThanOrEqualToThreshold"
   evaluation_periods  = 1
   metric_name         = "FreeStorageSpace"
@@ -90,8 +90,8 @@ resource "aws_cloudwatch_metric_alarm" "rds_low_storage" {
   }
 
   tags = {
-    Environment = "dev"
-    Project     = "ContainerizedWebPlatform"
+    Environment = var.environment
+    Project     = var.project_name
   }
 }
 
@@ -99,7 +99,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_low_storage" {
 # 6. ALB HTTP 5XX ERROR RATE ALARM
 # ==========================================
 resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
-  alarm_name          = "dev-alb-high-5xx-error-alarm"
+  alarm_name          = "${var.environment}-alb-high-5xx-error-alarm"
   comparison_operator = "GreaterThanOrEqualToThreshold"
   evaluation_periods  = 1
   metric_name         = "HTTPCode_Target_5XX_Count"
@@ -115,7 +115,27 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
   }
 
   tags = {
-    Environment = "dev"
-    Project     = "ContainerizedWebPlatform"
+    Environment = var.environment
+    Project     = var.project_name
   }
+}
+
+resource "aws_cloudwatch_metric_alarm" "ecs_running_tasks_low" {
+  alarm_name          = "${var.environment}-ecs-running-tasks-low-alarm"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "RunningTaskCount"
+  namespace           = "ECS/ContainerInsights"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 1
+  alarm_description   = "Triggers when the ECS service has fewer than one running task"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    ClusterName = aws_ecs_cluster.main.name
+    ServiceName = aws_ecs_service.main.name
+  }
+
+  tags = local.common_tags
 }

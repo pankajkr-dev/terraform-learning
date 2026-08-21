@@ -39,6 +39,7 @@ pipeline {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-jenkins-deployer']]) {
                     sh """
+                        apk add --no-cache aws-cli curl
                         rm -rf .terraform
                         terraform init -input=false
                         terraform workspace select -or-create ${params.ENVIRONMENT}
@@ -64,6 +65,7 @@ pipeline {
                     // Step 1: Run Plan & generate readable text inside Terraform Container
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-jenkins-deployer'], string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
                         sh """
+                            apk add --no-cache aws-cli curl
                             terraform workspace select ${params.ENVIRONMENT}
                             terraform plan -input=false -var-file="${params.ENVIRONMENT}.tfvars" -no-color -out=tfplan.binary > plan_output.txt
                             terraform show -no-color tfplan.binary > plan_readable.txt
@@ -111,6 +113,7 @@ pipeline {
 
                     // Step 1: Execute detailed-exitcode plan in Terraform container
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-jenkins-deployer']]) {
+                        sh 'apk add --no-cache aws-cli curl'
                         sh 'terraform workspace select ' + params.ENVIRONMENT
                         exitCode = sh(
                             script: "terraform plan -detailed-exitcode -input=false -var-file=\"${params.ENVIRONMENT}.tfvars\" -no-color",
@@ -157,6 +160,7 @@ pipeline {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-jenkins-deployer']]) {
                     sh """
+                        apk add --no-cache aws-cli curl
                         terraform workspace select ${params.ENVIRONMENT}
                         terraform plan -input=false -var-file="${params.ENVIRONMENT}.tfvars" -out=tfplan.binary
                     """
@@ -198,6 +202,7 @@ pipeline {
                 unstash 'terraform-plan'
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-jenkins-deployer']]) {
                     sh """
+                        apk add --no-cache aws-cli curl
                         terraform workspace select ${params.ENVIRONMENT}
                         terraform apply -input=false tfplan.binary
                     """
