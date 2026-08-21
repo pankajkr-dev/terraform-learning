@@ -45,4 +45,22 @@ variable "availability_zones" {
   default     = ["us-east-1a", "us-east-1b"]
 }
 
+variable "alert_email" {
+  description = "Optional email address for SNS alert subscriptions"
+  type        = string
+  default     = ""
+}
+
+variable "container_image" {
+  description = "Container image used by ECS"
+  type        = string
+  default     = "nginx:latest"
+}
+
+variable "smoke_test_enabled" {
+  description = "Run the ALB smoke test provisioner after apply"
+  type        = bool
+  default     = false
+}
+
 

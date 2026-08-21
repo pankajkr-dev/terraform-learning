@@ -52,6 +52,16 @@ resource "aws_eks_cluster" "main" {
   }
 }
 
+resource "aws_security_group_rule" "rds_from_eks" {
+  type                     = "ingress"
+  security_group_id        = module.networking.rds_security_group_id
+  source_security_group_id = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  description              = "Allow PostgreSQL from EKS worker traffic"
+}
+
 # ==========================================
 # 3. IAM ROLE FOR EKS WORKER NODE GROUP
 # ==========================================
@@ -124,4 +134,66 @@ resource "aws_eks_node_group" "main" {
     Environment = var.environment
     Project     = var.project_name
   }
+}
+
+resource "kubernetes_deployment_v1" "app" {
+  metadata {
+    name = "${var.environment}-app"
+    labels = {
+      app         = "${var.environment}-app"
+      environment = var.environment
+    }
+  }
+
+  spec {
+    replicas = 2
+
+    selector {
+      match_labels = {
+        app = "${var.environment}-app"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "${var.environment}-app"
+        }
+      }
+
+      spec {
+        container {
+          name  = "web-app"
+          image = var.container_image
+
+          port {
+            container_port = 80
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [aws_eks_node_group.main]
+}
+
+resource "kubernetes_service_v1" "app" {
+  metadata {
+    name = "${var.environment}-app"
+  }
+
+  spec {
+    selector = {
+      app = "${var.environment}-app"
+    }
+
+    port {
+      port        = 80
+      target_port = 80
+    }
+
+    type = "ClusterIP"
+  }
+
+  depends_on = [kubernetes_deployment_v1.app]
 }
